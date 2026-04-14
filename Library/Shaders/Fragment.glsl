@@ -5,6 +5,6 @@ uniform sampler2D Buffer;
 
 out vec4 Color;
 
-void main() {
+void main( ) {
     Color = texture( Buffer, TextureCoordinates );
 }
