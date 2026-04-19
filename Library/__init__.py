@@ -24,7 +24,7 @@ class Renderer:
 
         FilePath = __file__;
 
-        Separators = FilePath.replace( "\\", "/" ).split( "/" );
+        Separators = FilePath.split( "/" );
         Path = FilePath.replace( Separators[ len( Separators ) - 1 ], "" );
 
         Fragment = open( Path + "Shaders/Fragment.glsl", "r" ).read( );
