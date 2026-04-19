@@ -29,7 +29,7 @@ while ( LibraryObject.Stepper( ) ):
     LibraryObject.Clear( );
     Angle += Epsilon;
 
-    Rotated = Vertices @ Rotation.from_euler( "xy", [ Angle, Angle ] ).as_matrix().T;
+    Rotated = ( Vertices @ Rotation.from_euler( "xy", [ Angle, Angle ] ).as_matrix( ).T );
     Projection = ( Rotated[ :, : 2 ] / ( Rotated[ :, 2 : 3 ] + 4 ) * CenterY + [ CenterX, CenterY ] ).astype( int );
 
     for Origin, Destination in Edges:
