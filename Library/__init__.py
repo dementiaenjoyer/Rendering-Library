@@ -1,28 +1,7 @@
 from moderngl import ( NEAREST as Nearest, TRIANGLE_STRIP as TriangleStrip, create_context as CreateContext );
-from numpy import ( zeros as Zeros, uint8 as UInt8, array as Array, empty as Empty );
+from numpy import ( zeros as Zeros, uint8 as UInt8, array as Array );
 
 import glfw as Graphics;
-
-class BufferObject:
-    def __init__( Self ):
-        Self.Pixels = [ ];
-        Self.Stack = [ ];
-
-    def WriteVector2( Self, PositionX, PositionY ):
-        Self.Stack = [ PositionX, PositionY ];
-
-    def WriteColor( Self, ColorR = 255, ColorG = 255, ColorB = 255, ColorA = 255 ):
-        Pixels = Self.Pixels;
-        Stack = Self.Stack;
-
-        PositionX, PositionY = Stack;
-
-        Pixels.append( ( PositionX, PositionY, ColorR, ColorG, ColorB, ColorA ) );
-        Stack.clear( )
-
-    def Clear( Self ):
-        Self.Pixels.clear( );
-        Self.Stack.clear( );
 
 class Renderer:
     def __init__( Self, Name = "Program", Width = 1224, Height = 612 ):
@@ -30,10 +9,10 @@ class Renderer:
             return;
 
         Window = Graphics.create_window( Width, Height, Name, None, None );
-        Self.Window = Window
+        Self.Window = Window;
 
         if ( not Window ):
-            return; Graphics.terminate( );
+            return Graphics.terminate( );
 
         Graphics.make_context_current( Window );
 
@@ -45,7 +24,7 @@ class Renderer:
 
         FilePath = __file__;
 
-        Separators = FilePath.split( "/" );
+        Separators = FilePath.replace( "\\", "/" ).split( "/" );
         Path = FilePath.replace( Separators[ len( Separators ) - 1 ], "" );
 
         Fragment = open( Path + "Shaders/Fragment.glsl", "r" ).read( );
@@ -54,7 +33,9 @@ class Renderer:
         Program = Context.program( vertex_shader = Vertex, fragment_shader = Fragment );
         Buffer = Context.buffer( Array( [ -1, -1, 1, -1, -1, 1, 1, 1 ], dtype = "f4" ) );
 
-        Self.Data = Zeros( ( Height, Width, 4 ), dtype = UInt8 );
+        Self.Canvas = Zeros( ( Height, Width, 4 ), dtype = UInt8 );
+        Self.MemoryView = memoryview( Self.Canvas );
+
         Self.VertexArray = Context.vertex_array(
             Program,
             [ ( Buffer, "2f", "Position" ) ]
@@ -63,22 +44,16 @@ class Renderer:
         BufferGPU = Context.texture( ( Width, Height ), 4 );
         BufferGPU.filter = ( Nearest, Nearest );
 
-        Self.Texture = BufferGPU
+        Self.Texture = BufferGPU;
         BufferGPU.use( 0 );
 
         Program[ "Buffer" ] = 0;
 
-    def Push( Self, Buffer ):
-        Pixels = Buffer.Pixels;
+    def WriteQuad( Self, PositionX, PositionY, SizeX, SizeY, R, G, B, A ):
+        Self.Canvas[ max( 0, PositionY ) : ( PositionY + SizeY ), max( 0, PositionX ) : ( PositionX + SizeX ) ] = ( R, G, B, A );
 
-        Texture = Self.Texture;
-        Data = Self.Data;
-
-        for ( PositionX, PositionY, R, G, B, A ) in Pixels:
-            Data[ PositionY, PositionX ] = ( R, G, B, A );
-
-        Texture.write( Data );
-        Buffer.Clear( );
+    def Update( Self ):
+        Self.Texture.write( Self.MemoryView );
 
     def Stepper( Self ):
         Window = Self.Window;
@@ -86,22 +61,16 @@ class Renderer:
         if ( Graphics.window_should_close( Window ) ):
             return;
 
-        VertexArray = Self.VertexArray;
-        Context = Self.Context;
-
-        Context.clear( 0, 0, 0 );
-        VertexArray.render( TriangleStrip );
+        Self.Context.clear( 0, 0, 0 );
+        Self.VertexArray.render( TriangleStrip );
 
         Graphics.swap_buffers( Window );
         Graphics.poll_events( );
 
         return 1;
 
-    def Buffer( Self ):
-        return BufferObject( );
-
     def Clear( Self ):
-        Self.Data = Zeros( ( Self.Height, Self.Width, 4 ), dtype = UInt8 );
+        Self.Canvas.fill( 0 );
 
     def Exit( Self ):
         Graphics.terminate( );
